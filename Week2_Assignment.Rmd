@@ -1,0 +1,99 @@
+---
+title: "Week2 Assignment"
+author: "A.S"
+date: "September 9, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+#### Week2 Assignment (Movie Ratings)
+Choose six recent popular movies.  Ask at least five people that you know (friends, family, classmates, imaginary friends) to rate each of these movie that they have seen on a scale of 1 to 5.  Take the results (observations) and store them in a SQL database.  Load the information into an R dataframe.
+
+Your deliverables should include your SQL scripts and your R Markdown code, posted to GitHub.
+
+This is by design a very open ended assignment.  A variety of reasonable approaches are acceptable.  You can (and should) blank out your SQL password if your solution requires it; otherwise, full credit requires that your code is “reproducible,” with the assumption that I have the same database server and R software.
+
+You may work in a small group on this assignment.   If you work in a group, each group member should indicate who they worked with, and all group members should individually submit their week 2 assignment.
+
+Please start early, and do work that you would want to include in a “presentations portfolio” that you might share in a job interview with a potential employer!  You are encouraged to share thoughts, ask, and answer clarifying questions in the “Week 2: R and SQL” forum.
+
+
+```{r}
+library(RMySQL)
+library(sqldf)
+
+mydb = dbConnect(MySQL(), user='root', password='root', dbname='movie_ratings', host='localhost')
+dbListTables(mydb)
+
+#"movie_info"
+#"genre_info"  
+#"director_info" 
+#"actor_info" 
+#"movie_actor_map"
+#"movie_genre_map" 
+
+
+
+movie_info_rs = dbSendQuery(mydb, "select * from movie_info")
+movie_info_df = fetch(movie_info_rs, n=-1)
+
+genre_info_rs = dbSendQuery(mydb, "select * from genre_info")
+genre_info_df = fetch(genre_info_rs, n=-1)
+
+director_info_rs = dbSendQuery(mydb, "select * from director_info")
+director_info_df = fetch(director_info_rs, n=-1)
+
+actor_info_rs = dbSendQuery(mydb, "select * from actor_info")
+actor_info_df = fetch(actor_info_rs, n=-1)
+
+movie_actor_map_rs = dbSendQuery(mydb, "select * from movie_actor_map")
+movie_actor_map_df = fetch(movie_actor_map_rs, n=-1)
+
+movie_genre_map_rs = dbSendQuery(mydb, "select * from movie_genre_map")
+movie_genre_map_df = fetch(movie_genre_map_rs, n=-1)
+
+print(movie_info_df)
+print(genre_info_df)
+print(director_info_df)
+print(actor_info_df)
+print(movie_actor_map_df)
+print(movie_genre_map_df)
+
+```
+
+#### Join movie_info and actor_info tables and display results
+#### Find all the actors in movie 'War Dogs'
+
+```{r}
+movie_actor_map_df = sqldf("select * from movie_info_df a, actor_info_df b, movie_actor_map_df c 
+                    where a.id = c.movie_id and b.id = c.actor_id and a.title = 'War Dogs'
+                    ")
+
+print(movie_actor_map_df)
+```
+
+#### Find all movies with Ratings 4
+```{r}
+
+movie_ratings_df = sqldf("select * from movie_info_df a where a.ratings = 4")
+print(movie_ratings_df)
+
+```
+
+#### Find all in genre Action
+```{r}
+movie_genre_map_df = sqldf("select * from movie_info_df a, genre_info_df b, movie_genre_map_df c 
+                    where a.id = c.movie_id and b.id = c.genre_id and b.name = 'Action'
+                    ")
+
+print(movie_genre_map_df)
+```
+
+
