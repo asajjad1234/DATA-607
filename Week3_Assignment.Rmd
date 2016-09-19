@@ -1,0 +1,137 @@
+---
+title: "Week3 Assignment"
+author: "A.S"
+date: "September 16, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+library(stringr)
+```
+
+
+
+#### Question 3: Copy the introductory example. The vector name stores the extracted names.
+
+#### 3(a). Use the tools of this chapter to rearrange the vector so that all elements conform to the standard first_name last_name.
+
+```{r}
+raw.data = "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+
+
+names = unlist(str_extract_all(raw.data, "[[A-z]., ]{2,}"))
+print(names)
+
+# Get the first names
+firstNames = unlist(str_extract_all(names, "[.,] [[A-z]]{2,}$|[[A-z]]{2,} "))
+firstNames = unlist(str_extract_all(firstNames, "[[A-z]]{2,}"))
+print (firstNames)
+
+# Get the last names
+lastNames = unlist(str_extract_all(names, "[^[.,]] [[A-z]]{2,}$|[[A-z]]{2,}, "))
+lastNames = unlist(str_extract_all(lastNames, "[[A-z]]{2,}"))
+print(lastNames)
+
+# Construct a data frame and display the frame
+data.frame("Fist Name" = firstNames, "Last Name" = lastNames)
+
+# Get the titles
+titles = unlist(str_extract_all(names, "[[A-z]]{2,}\\."))
+print(titles)
+
+```
+
+####  3(b). Construct a logical vector indicating whether a character has a title (i.e., Rev. and Dr.).
+```{r}
+data.frame("Name" = names, "Title Exists" = str_detect(names, titles))
+```
+
+
+
+####  3(c). Construct a logical vector indicating whether a character has a second name.
+```{r}
+# Get names with 2 parts
+secondNames = unlist(str_extract_all(names, " [[A-z]]{1}\\.? [[A-z]]{1,}\\.?"))
+secondNames = unlist(str_extract_all(secondNames,"[[A-z]]{1}\\.? [[A-z]]{1,}\\.?"))
+print(secondNames)
+data.frame("Name" = names, "Second Name Exists" = str_detect(names, secondNames))
+```
+
+
+####  4. Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.
+#### 4(a) [0-9]+\\$
+
+Answer: At least one digit betwen 0 and 9 followed by a dollar sign
+```{r}
+string4a = c("", "01\\", "0012$", "02020", "738372", "34384782347832", "34")
+str_detect(string4a, "[0-9]+\\$")
+```
+
+#### 4(b) \\b[a-z]{1,4}\\b
+
+Answer: Between 1 to 4 occurrences of any lower case letter a thru z that performs whole word only search
+```{r}
+string4b = c("a", "bc", "def", "ghij", "klmno", "02020", "34384782347832", "34")
+str_detect(string4b, "\\b[a-z]{1,4}\\b")
+```
+
+#### 4(c) .*?\\.txt$
+
+Answer: Any optional pattern that starts with any character including space and ends with .txt.
+```{r}
+string4c = c("a", "bc", "def", "ghij.", "klmn.txt", "*.txt", "pqr874238743 .txt", ".txt")
+str_detect(string4c, ".*?\\.txt$")
+```
+
+#### 4(d) \\d{2}/\\d{2}/\\d{4}
+Answer: Any 2 digits followed by a forward slash then any 2 digits followed by a forward slash and then any 4 digits number. This pattern can be used to check dates but it doesn't verify dates.
+```{r}
+string4d = c("1/1/2016", "02/02/2016", "20/20/0000", "1/1/16", "1/13/293393", "34384782347832", "34")
+str_detect(string4d, "\\d{2}/\\d{2}/\\d{4}")
+```
+
+#### 4(e) <(.+?)>.+?</\\1>
+Answer: Any pattern that matches a html/xml markup with open and closing tags.
+```{r}
+string4e = c("<html>Hello World</html>", "<html>Hello World<html>", "34384782347832", "34")
+str_detect(string4e, "<(.+?)>.+?</\\1>")
+```
+
+
+
+#### Question (9) The following code hides a secret message. Crack it with R and regular expressions. Hint: Some of the characters are more revealing than others! The code snippet is also available in the materials at www.r-datacollection.com.
+
+clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo
+Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO
+d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5
+fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr
+
+
+```{r}
+code = "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0TanwoUwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigOd6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+print(code)
+
+
+# Apply each of the following character classes in R Regular expressions given in the text book
+# to see which one extracts some meaninful clue from the secret message
+# [:digit:], [:lower:], [:upper:], [:alpha:], [:alnum:], 
+# [:punct:], [:graph:], [:blank:], [:space:], [:print:]
+# It's clear that [:upper:] regular expression extracts meaningful text
+
+x = unlist(str_extract_all(code, "[[:upper:].! ]"))
+print(x)
+
+# Concatenate all vectors into a string of characters 
+y = paste(x, collapse="")
+print(y)
+
+# Replace dots (.) with spaces to obtain the secret message
+z = str_replace_all(y, "[\\.]", " ")
+print(z)
+```
