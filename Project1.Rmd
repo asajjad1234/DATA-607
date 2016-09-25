@@ -1,0 +1,91 @@
+---
+title: "Project1"
+author: "A.S"
+date: "September 24, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+##### <span style="color:red"><b>Given a text file (CSV) with chess tournament results, generate a CSV file with Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents</b></span>
+
+##### <span style="color:blue"><b><u>Step 1:</u> Load the required libraries. We need <i><u>stringr</u></i> to use regular expressions to filter text. We will also need <i><u>dplyr</u></i> library to filter values from the data frame.</b></span>
+```{r}
+library(stringr)
+library(dplyr)
+```
+
+##### <span style="color:blue"><b><u>Step 2:</u> Load the contents of <i><u>tournamentinfo.txt</u></i> as a | separated file. Start from the 4th row because the first few rows is the header. Create a column list and attach it to the data when it is read as a table from a CSV file</b></span>
+```{r}
+columnNames = c("Number", "Name", "Points", "Round1", "Round2", "Round3", "Round4", "Round5", "Round6", "Round7", "State", "Ratings", "Opponent")
+tournamentInfo  = read.table("tournamentinfo.txt", header = FALSE, skip = 4, sep = "|", fill = TRUE, stringsAsFactors = FALSE, col.names = columnNames)
+tournamentInfo = filter(tournamentInfo, Name != "")
+```
+
+##### <span style="color:blue"><b><u>Step 3:</u> Remove leading and trailing spaces from every item in the data frame. Then use regular expressions to extract meaningful text from the data frame. Loop through the data frame each row at a time. Within each row, iterate through the list of columns. Eliminate characters from points column and get numbers. Construct thre extra columns and copy data from the next line over to state and ratings columns. </b></span>
+```{r}
+i = 1
+while (i < nrow(tournamentInfo) ) {
+  tournamentInfo$Number[i]   = str_trim(tournamentInfo$Number[i])
+  tournamentInfo$Name[i]     = str_trim(tournamentInfo$Name[i])
+  tournamentInfo$Points[i]   = str_trim(tournamentInfo$Points[i])
+  
+  for (j in 4:10) {
+    tournamentInfo[i, j] = str_trim(str_extract(tournamentInfo[i, j], "[[\\s]]+[[0-9]]{1,2}"))
+  }
+  
+  tournamentInfo$State[i]    = str_trim(tournamentInfo$Number[i + 1])
+  tournamentInfo$Ratings[i]  = str_trim(tournamentInfo$Name[i + 1])
+  tournamentInfo$Ratings[i]  = str_trim(str_extract(tournamentInfo$Ratings[i], "[[\\s]]{1}[[0-9]]{1,}"))
+  i = i+2
+}
+```
+
+##### <span style="color:blue"><b><u>Step 4:</u> Remove rows that are not required from the data frame using dplyr filter command</b></span>
+```{r}
+tournamentInfo_df = filter(tournamentInfo, row_number() %% 2 == 1)
+```
+
+##### <span style="color:blue"><b><u>Step 5:</u> Loop thru the data frame again to populate average opponent's rating</b></span>
+```{r}
+for (i in 1:nrow(tournamentInfo_df)) {
+  sum = 0
+  n = 0
+
+  for (j in 4:10) {
+    if (!is.na(tournamentInfo_df[i, j])) {
+      sum = sum + as.numeric(tournamentInfo_df$Ratings[as.numeric(tournamentInfo_df[i, j])])
+      n = n+1
+    }
+  }
+  tournamentInfo_df$Opponent[i] = round(sum/n)
+}
+```
+
+##### <span style="color:blue"><b><u>Step 6:</u> Print the data frame to verify the contents</b></span>
+```{r}
+print(nrow(tournamentInfo_df))
+print.data.frame(tournamentInfo_df)
+```
+
+##### <span style="color:blue"><b><u>Step 7:</u> Construct result data frame. In the result we need only 5 columns i.e. Player's Name, Player's state, Total Points, Pre-rating score and Opponent's average pre-ratings. Write the data frame to a CSV file.</b></span>
+```{r}
+resultInfo_df = data.frame(tournamentInfo_df$Name, tournamentInfo_df$State, tournamentInfo_df$Points, tournamentInfo_df$Ratings, tournamentInfo_df$Opponent)
+colnames(resultInfo_df) = c("Name", "State", "Total Points", "Pre-Rating", "Avg Pre-Rating Opponents")
+write.table(resultInfo_df, file = "tournamentResults.csv", sep = ",", row.names = FALSE)
+```
+
+##### <span style="color:blue"><b><u>Step 8:</u> Print the data frame to verify the contents</b></span>
+```{r}
+print(nrow(resultInfo_df))
+print.data.frame(resultInfo_df)
+```
+
+```{r}
+```
+
