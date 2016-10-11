@@ -1,0 +1,148 @@
+---
+title: "Project2_03"
+author: "A.S"
+date: "October 8, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+## <span style="color:blue"><b>Disability Information by Age group in CT, MA and NY</b></span>
+
+##### <span style="color:red"><b>The dataset for this project is downloaded from http://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk. This is disability data for three states Connecticut, Massachusetts and New York. The data is group into 4 different categories based on the age group. The first is Under 5. The second group is between 5 and 17. The third group is between 18 and 64. And finally, the last group is for people aver 65 years of age. The dataset consists of different disabilities: Ambulatory, Cognitive, Hearing, Vision, Independent Living, Self care. For childer under 5, the data is available for only two disabilities Vision and Hearing.</b></span>
+
+##### <span style="color:red"><b>The objective of this project is to analyze the disability data betwen age groups in three states, CT, MA and NY:</b></span>
+
+
+##### <span style="color:blue"><b>The following <u>dplyr/tidyr</u> functions are used in this project</b></span>
+<table border="1" width="200">
+<tr><th><b>dplyr</b></th><th><b>tidyr</b></th></tr>
+<tr><td><b>&nbsp;mutate</b></td><td><b>&nbsp;gather</b></td></tr>
+<tr><td><b>&nbsp;filter</b></td><td><b>&nbsp;spread</b></td></tr>
+<tr><td><b></b></td><td><b></b></td></tr>
+<tr><td></td><td></td></tr>
+<tr><td></td><td></td></tr>
+</table>
+
+##### <span style="color:red"><b> (1) Save the data as a CSV file:</b></span>
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(sqldf)
+library(ggplot2)
+```
+
+##### <span style="color:red"><b> (2) Read the information from the .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data:</b></span>
+##### <span style="color:blue"><b>(2.a) Read <i><u>03_DisabilityData.csv</i></u> file</b></span>
+
+```{r}
+disability_df = read.csv(file="03_DisabilityData.csv", header=TRUE, sep=",", skip = 0)
+colnames(disability_df) = c("Age", "Disability_Type", "CT", "MA", "NY")
+disability_df = filter(disability_df, Disability_Type != "")
+print(disability_df)
+print (colnames(disability_df))
+```
+
+##### <span style="color:blue"><b> (2.b) If any row doesn't have the Age, copy it over from previous row</b></span>
+```{r}
+for (i in 1:nrow(disability_df)) {
+  if (disability_df$Age[i] == "") {
+    disability_df$Age[i] = disability_df$Age[i-1]
+  }
+}
+print(disability_df)
+```
+
+##### <span style="color:blue"><b> (2.c) Apply tidyr <i><u>gather</u></i> function to change the data format from wide to long and change column names.</b></span>
+```{r}
+disability_df = gather(disability_df, State, Disability_Count, CT:NY)
+print(disability_df)
+```
+
+##### <span style="color:blue"><b> (2.d) Apply tidyr <i><u>spread</u></i> function to spread data into multiple columns, one for each disability type.</b></span>
+```{r}
+disability_df = spread(disability_df, Disability_Type, Disability_Count)
+disability_df[is.na(disability_df)] = 0
+print (disability_df)
+
+```
+
+##### <span style="color:blue"><b> (2.e) Create a function to calculate the percentage and round it to 2 decimal digits</b></span>
+```{r}
+calcPercentage = function(value, totalValue) {
+  round((value/totalValue)*100, 2)
+}
+```
+
+##### <span style="color:blue"><b> (2.f) Apply dplyr <i><u>mutate</i></u> function to add 7 extra columns for <i><u>TotalDisability</i></u>, <i><u>PercentAmbulatory</i></u> and <i><u>PercentCognitive</i></u> and<i><u>PercentHearing</i></u> and <i><u>PercentIndependent_Living</i></u> and <i><u>PercentSelf_care</i></u> and <i><u>PercentVision</i></u></b></span>
+```{r}
+disability_df = mutate(disability_df, TotalDisability=(Ambulatory+Cognitive+Hearing+Independent_Living+Self_care+Vision), 
+                        PercentAmbulatory=calcPercentage(Ambulatory, TotalDisability), 
+                        PercentCognitive=calcPercentage(Cognitive, TotalDisability), 
+                        PercentHearing=calcPercentage(Hearing, TotalDisability), 
+                        PercentIndependent_Living=calcPercentage(Independent_Living, TotalDisability), 
+                        PercentSelf_care=calcPercentage(Self_care, TotalDisability), 
+                        PercentVision=calcPercentage(Vision, TotalDisability))
+print(disability_df)
+```
+##### <span style="color:red"><b>(3) Perform analysis to compare disabilities for different age groups.</b></span>
+##### <span style="color:blue"><b> (3.a) Draw a bar graph that represents the total number of disability for each state</b></span>
+```{r}
+disability_state_group_df=sqldf("select State, sum(TotalDisability) As TotalDisability from disability_df group by State")
+print(disability_state_group_df)
+ggplot(disability_state_group_df, aes(x=State, y=TotalDisability)) + geom_bar(fill="#8877aa", color="black", stat="identity")
+```
+
+
+##### <span style="color:blue"><b> (3.b) Draw a bar graph that represents the total number of disability for each age group</b></span>
+```{r}
+disability_age_group_df=sqldf("select Age, sum(TotalDisability) As TotalDisability from disability_df group by Age")
+print(disability_age_group_df)
+ggplot(disability_age_group_df, aes(x=Age, y=TotalDisability)) + geom_bar(fill="#87ffaa", color="black", stat="identity")
+```
+
+##### <span style="color:blue"><b> (3.c) Draw a bar graph that represents hearing disability for each state separated by each age group excluding age 0 to 4</b></span>
+```{r}
+graphHearing_df = filter (disability_df, (Age != "00--04"))
+print(graphHearing_df)
+ggplot(data=graphHearing_df, aes(x=State, y=PercentHearing, fill=Age)) + geom_bar(stat="identity", position="dodge") + 
+  ylab("% of Hearing Disability") + ggtitle("% of Hearing Disability")
+```  
+
+##### <span style="color:blue"><b> (3.d) Draw a bar graph that represents vision disability for each state separated by each age group excluding age 0 to 4</b></span>
+```{r}
+graphVision_df = filter (disability_df, (Age != "00--04"))
+print(graphVision_df)
+ggplot(data=graphVision_df, aes(x=State, y=PercentVision, fill=Age)) + geom_bar(stat="identity", position="dodge") + 
+  ylab("% of Vision Disability") + ggtitle("% of Vision Disability")
+```
+
+##### <span style="color:blue"><b> (3.e) Draw a line graph that represents ambulatory disability for each state separated by each age group excluding age 0 to 4</b></span>
+```{r}
+graphAmbulatory_df = filter (disability_df, (Age != "00--04"))
+print(graphAmbulatory_df)
+ggplot(data=graphAmbulatory_df, aes(x=State, y=PercentAmbulatory, group=Age, color=Age)) +  geom_line() + 
+  geom_point(color = "Red") + ylab("% of Ambulatory Disability") + ggtitle("% of Ambulatory Disability")
+```
+
+##### <span style="color:blue"><b> (3.f) Draw a line graph that represents cognitive disability for each state separated by each age group excluding age 0 to 4</b></span>
+```{r}
+graphCognitive_df = filter (disability_df, (Age != "00--04"))
+print(graphCognitive_df)
+ggplot(data=graphCognitive_df, aes(x=State, y=PercentCognitive, group=Age, color=Age)) +  geom_line() + 
+  geom_point(color = "Red") + ylab("% of Cognitive Disability") + ggtitle("% of Cognitive Disability")
+```
+
+##### <span style="color:red"><b> (4) Conclusion.</b></span>
+<span style="color:blue"><b>(4.a) From the graphs we can conclude that CT and MA have almost equal percentage of people with hearing disabilities in the age group 65 and over. And we also notice that CT has the highest percentage of children with the hearing disability in the age group 5-17 years.</b></span>
+
+<span style="color:blue"><b>From the first graph we can conclude that NY has the highest number of people with disabilities combined. This includes all age groups. Also, CT has the highest percentag of childern with Vision disability in the age group 5-17 years even though CT represents smaller population compared to NY.</b></span>
+
+

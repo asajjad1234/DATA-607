@@ -1,0 +1,125 @@
+---
+title: "Project2_01"
+author: "A.S"
+date: "October 6, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+## <span style="color:blue"><b>Child Mortality</b></span>
+
+##### <span style="color:red"><b>The dataset for this project is downloaded from http://www.childmortality.org under “Estimates for under-five, infant and neonatal mortality”. The dataset is in wide form and contains six value variables of interest: under-five (0-4 years) mortality, infant (0-1 years) mortality, neonatal (0-1 month) mortality, as well as the number of under-five, infant, and neonatal deaths.</b></span>
+
+##### <span style="color:red"><b>The objective of this project is to analyze number of children deaths in different countries viz, Canada, France, Germany and United Kingdom:</b></span>
+
+##### <span style="color:blue"><b>The following <u>dplyr/tidyr</u> functions are used in this project</b></span>
+<table border="1" width="200">
+<tr><th><b>dplyr</b></th><th><b>tidyr</b></th></tr>
+<tr><td><b>&nbsp;select</b></td><td><b>&nbsp;gather</b></td></tr>
+<tr><td><b>&nbsp;filter</b></td><td><b>&nbsp;separate</b></td></tr>
+<tr><td><b>&nbsp;arrange</b></td><td></td></tr>
+<tr><td></td><td></td></tr>
+<tr><td></td><td></td></tr>
+</table>
+
+##### <span style="color:red"><b> (1) Save the data as a CSV file:</b></span>
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(sqldf)
+library(ggplot2)
+```
+
+##### <span style="color:red"><b> (2) Read the information from the .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data:</b></span>
+##### <span style="color:blue"><b>(2.a) Read <i><u>01_ChildMortality.csv</i></u> file</b></span>
+
+```{r}
+ChildMortality_df = read.csv(file="01_ChildMortality.csv", header=TRUE, sep=",", skip = 6)
+nrow(ChildMortality_df)
+```
+
+##### <span style="color:blue"><b> (2.b) Apply <i><u>gsub</u></i> function and replace "." with "_" in the column names</b></span>
+```{r}
+colnames(ChildMortality_df) = gsub("\\.","_",colnames(ChildMortality_df))
+```
+
+##### <span style="color:blue"><b> (2.c) Apply tidyr <i><u>filter</u></i> function and select only cases that have median values for countries Canada, France, Germany and United Kingdom</b></span>
+```{r}
+ChildMortality_df = filter(ChildMortality_df, Uncertainty_bounds_ == "Median" &
+                              (CountryName == "Canada" |
+                               CountryName == "France" |
+                               CountryName == "Germany" |
+                               CountryName == "United Kingdom"))
+
+nrow(ChildMortality_df)
+```
+
+##### <span style="color:blue"><b> (2.d) Apply tidyr <i><u>select</u></i> function and select only columns that are relevant for our purpose</b></span>
+```{r}
+ChildDeaths1_df = select(ChildMortality_df, matches("CountryName|Under_five_Deaths|Infant_Deaths|Neonatal_Deaths"))
+nrow(ChildDeaths1_df)
+```
+
+##### <span style="color:blue"><b> (2.e) Apply tidyr <i><u>gather</u></i> function and convert the data from wide to long structure so it can be used for analysis</b></span>
+```{r}
+ChildDeaths2_df = gather(ChildDeaths1_df, Type, Value, Under_five_Deaths_1950:Neonatal_Deaths_2015)
+head(ChildDeaths2_df)
+```
+
+##### <span style="color:blue"><b> (2.f) Apply <i><u>gsub</u></i> function to replace strings "Under_five_Deaths, Infant_Deaths and Neonatal_Deaths by codes U5D, IND and NND respectively</b></span>
+```{r}
+ChildDeaths2_df$Type = gsub("Under_five_Deaths", "U5D", ChildDeaths2_df$Type)
+ChildDeaths2_df$Type = gsub("Infant_Deaths", "IND", ChildDeaths2_df$Type)
+ChildDeaths2_df$Type = gsub("Neonatal_Deaths", "NND", ChildDeaths2_df$Type)
+head(ChildDeaths2_df, 20)
+```
+
+##### <span style="color:blue"><b> (2.g) Apply <i><u>separate</u></i> function to extract the year of death from the event type column</b></span>
+```{r}
+ChildDeaths2_df = separate(ChildDeaths2_df, Type, c("Rate", "Year"), sep = "_")
+head(ChildDeaths2_df, 20)
+```
+##### <span style="color:red"><b> (3) Prepare data for analysis:</b></span>
+##### <span style="color:blue"><b>(3.a) Apply <i><u>arrange</u></i> function to arrange the data by CountryName. Also, apply <i><u>filter</u></i> function to get rows that report under 5 deaths for years greater than 2005.</b></span>
+```{r}
+ChildDeaths2_df = arrange(ChildDeaths2_df, CountryName)
+ChildDeaths2_dfU5D = filter(ChildDeaths2_df, Rate == "U5D" & Value != "NA" & Year>=2005)
+print(ChildDeaths2_dfU5D)
+
+ggplot(data=ChildDeaths2_dfU5D, aes(x=Year, y=Value, group=CountryName, color=CountryName)) +  geom_line() + 
+  geom_point() + ylab("# of Deaths") +  ggtitle("Under 5 Child Deaths")
+```
+
+##### <span style="color:blue"><b>(3.b) Apply <i><u>arrange</u></i> function to arrange the data by CountryName. Also, apply <i><u>filter</u></i> function to get rows that report infant deaths for years greater than 2005.</b></span>
+```{r}
+ChildDeaths2_df = arrange(ChildDeaths2_df, CountryName)
+ChildDeaths2_dfIND = filter(ChildDeaths2_df, Rate == "IND" & Value != "NA" & Year>=2005)
+print(ChildDeaths2_dfIND)
+
+ggplot(data=ChildDeaths2_dfIND, aes(x=Year, y=Value, group=CountryName, color=CountryName)) +  geom_line() + 
+  geom_point() + ylab("# of Deaths") +  ggtitle("Infant Deaths")
+```
+
+##### <span style="color:blue"><b>(3.c) Apply <i><u>arrange</u></i> function to arrange the data by CountryName. Also, apply <i><u>filter</u></i> function to get rows that report neonatal deaths for years greater than 2005.</b></span>
+```{r}
+ChildDeaths2_df = arrange(ChildDeaths2_df, CountryName)
+ChildDeaths2_dfNND = filter(ChildDeaths2_df, Rate == "NND" & Value != "NA" & Year>=2005)
+print(ChildDeaths2_dfNND)
+
+ggplot(data=ChildDeaths2_dfNND, aes(x=Year, y=Value, group=CountryName, color=CountryName)) +  geom_line() + 
+  geom_point() + ylab("# of Deaths") +  ggtitle("Neonatal Deaths")
+```
+
+##### <span style="color:red"><b> (4) Conclusion:</b></span>
+<span style="color:blue"><b>(4.a) From the graphs we can conclude that the number of child deaths (Under 5, infant and neonatal) in United Kingdom increased from 2005 to 2009 and then decreased for every year afterwards. We can see a similar pattern in Canada. It would require further data/analysis to find the root causes of why it increased from 2005 to 2009 and then decreases afterwards.
+<br/>
+<br/>
+</b></span></b></span>

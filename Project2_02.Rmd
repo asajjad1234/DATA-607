@@ -1,0 +1,125 @@
+---
+title: "Project2_02"
+author: "A.S"
+date: "October 7, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+## <span style="color:blue"><b>Annual US Population Estimates</b></span>
+
+##### <span style="color:red"><b>The dataset for this project is downloaded from https://www.census.gov/popest/data/datasets.html. This is the annual estimates of the resident population by single year of age and gender for the United States for 04/01/2010 to 07/01/2015.</b></span>
+
+##### <span style="color:red"><b>The objective of this project is to analyze the population data and how it changes for each gender and age group:</b></span>
+
+
+##### <span style="color:blue"><b>The following <u>dplyr/tidyr</u> functions are used in this project</b></span>
+<table border="1" width="200">
+<tr><th><b>dplyr</b></th><th><b>tidyr</b></th></tr>
+<tr><td><b>&nbsp;mutate</b></td><td><b>&nbsp;gather</b></td></tr>
+<tr><td><b>&nbsp;filter</b></td><td><b>&nbsp;spread</b></td></tr>
+<tr><td><b>&nbsp;arrange</b></td><td><b>&nbsp;separate</b></td></tr>
+<tr><td></td><td></td></tr>
+<tr><td></td><td></td></tr>
+</table>
+
+##### <span style="color:red"><b> (1) Save the data as a CSV file:</b></span>
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(sqldf)
+library(ggplot2)
+```
+
+##### <span style="color:red"><b> (2) Read the information from the .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data:</b></span>
+##### <span style="color:blue"><b>(2.a) Read <i><u>02_USPopulationEstimate.csv</i></u> file</b></span>
+
+```{r}
+populationEstimate_df = read.csv(file="02_USPopulationEstimate.csv", header=TRUE, sep=",")
+head(populationEstimate_df, 5)
+print(colnames(populationEstimate_df))
+```
+
+##### <span style="color:blue"><b> (2.b) Apply tidyr <i><u>gather</u></i> function to change the data format from wide to long and change column names.</b></span>
+```{r}
+populationEstimate2_df = gather(populationEstimate_df, TYPE, POPULATION, CENSUS2010POP:POPESTIMATE2015)
+colnames(populationEstimate2_df) = c("Gender", "Age", "Type", "Population")
+```
+
+##### <span style="color:blue"><b> (2.c) Replace numbers with words to represent gender. In the original data "0" means Total, "1" means Males and "2" means Females.</b></span>
+```{r}
+populationEstimate2_df$Gender[populationEstimate2_df$Gender=="0"] = "Total"
+populationEstimate2_df$Gender[populationEstimate2_df$Gender=="1"] = "Male"
+populationEstimate2_df$Gender[populationEstimate2_df$Gender=="2"] = "Female"
+head(populationEstimate2_df, 10)
+```
+
+##### <span style="color:blue"><b> (2.d) Perform data manipulation to extract appropriate data contents. Then apply tidyr <i><u>separate</u></i> function to split the date column from Type column.</b></span>
+```{r}
+populationEstimate2_df$Type = gsub("CENSUS", "CENSUS_", populationEstimate2_df$Type)
+populationEstimate2_df$Type = gsub("POP", "", populationEstimate2_df$Type)
+populationEstimate2_df$Type = gsub("ESTIMATESBASE", "BASEESTIMATE", populationEstimate2_df$Type)
+populationEstimate2_df$Type = gsub("ESTIMATE", "ESTIMATE_", populationEstimate2_df$Type)
+populationEstimate2_df = separate(populationEstimate2_df, Type, c("Type", "Year"), sep = "_")
+populationEstimate2_df$Type = gsub("BASEESTIMATE", "BASE_ESTIMATE", populationEstimate2_df$Type)
+head(populationEstimate2_df, 10)
+```
+
+##### <span style="color:blue"><b>(2.e) Apply dplyr <i><u>arrange</u></i> function and to sort the data on Gender</b></span>
+```{r}
+populationEstimate2_df = arrange(populationEstimate2_df, Gender)
+head(populationEstimate2_df, 10)
+```
+
+##### <span style="color:blue"><b>(2.f) Apply tidyr <i><u>spread</u></i> function to spread gender in 2 different columns, namely Male and Female.</b></span>
+```{r}
+populationEstimate3_df = spread(populationEstimate2_df, Gender, Population)
+head(populationEstimate3_df, 10)
+```
+
+##### <span style="color:blue"><b> (2.g) Create a function to calculate the percentage and round it to 2 decimal digits</b></span>
+```{r}
+calcPercentage = function(value, totalValue) {
+  round((value/totalValue)*100, 2)
+}
+```
+##### <span style="color:blue"><b>(2.h) Apply tidyr <i><u>mutate</u></i> function to add 2 different columns, namely PercentMale and PercentFemale.</b></span>
+```{r}
+populationEstimate3_df = mutate(populationEstimate3_df, PercentFemale=calcPercentage(Female, Total), PercentMale=calcPercentage(Male, Total))
+head(populationEstimate3_df, 10)
+```
+##### <span style="color:red"><b>(3) Prepare data for analysis:</b></span>
+##### <span style="color:blue"><b>(3.a) Apply dplyr <i><u>filter</u></i> function to get Census data and display Age vs % of males</b></span>
+```{r}
+graph_df2 = filter (populationEstimate3_df, (Type == "CENSUS" & Age != 999))
+head(graph_df2, 10)
+ggplot(data=graph_df2, aes(x=Age, y=PercentMale, color=PercentMale)) +  geom_line() + 
+  geom_point() + ylab("PercentMale") +  ggtitle("Age Vs % Males")
+```
+
+##### <span style="color:blue"><b>(3.b) Apply dplyr <i><u>filter</u></i> function to get Census data for all genders and display Age vs males and female population</b></span>
+```{r}
+# Question: Draw Males and Females in a chat and see the difference
+graph_df0 = filter (populationEstimate2_df, (Type == "CENSUS" & Age != 999 & Gender != "Total"))
+head(graph_df0, 10)
+
+ggplot(data=graph_df0, aes(x=Age, y=Population, group=Gender, color=Gender)) +  geom_line() + 
+  geom_point() + ylab("Population") +  ggtitle("Age Vs Population")
+```
+
+##### <span style="color:red"><b>(4) Conclusion:</b></span>
+<span style="color:blue"><b>(4.a) From the graphs we can conclude that the male population started to decline rapidly at age 75. And the population size of males is increased from age 0 to approximately age 27. Then the population of males and females is almost equal. At around age 50 the population of females increased and then it stayed more than the male population until age 100.
+<br/>
+<br/>
+</b></span></b></span>
+
+
+
