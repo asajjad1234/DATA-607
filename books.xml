@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+<book>
+<id>1</id>
+<title>R in a Nutshell, 2nd Edition</title>
+<author>Joseph Adler</author>
+<isbn>978-1-4493-1208-4</isbn>
+<publisher>O'Reilly Media, Inc</publisher>
+<pubdate>10/09/2012</pubdate>
+</book>
+<book>
+<id>2</id>
+<title>Data Science for Business</title>
+<author>Foster Provost</author>
+<author>Tom Fawcett</author>
+<isbn>978-1-4493-6132-7</isbn>
+<publisher>O'Reilly Media, Inc</publisher>
+<pubdate>08/09/2013</pubdate>
+</book>
+<book>
+<id>3</id>
+<title>Automated Data Collection with R</title>
+<author>Simon Munzert</author>
+<author>Christian Rubba</author>
+<author>Peter Meissner</author>
+<author>Dominic Nyhuis</author>
+<isbn>978-1-449-31208-4</isbn>
+<publisher>John Wiley &#38; Sons</publisher>
+<pubdate>01/20/2015</pubdate>
+</book>
+</catalog>
