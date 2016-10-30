@@ -1,0 +1,55 @@
+---
+title: "Week9 Assignment"
+author: "A.S"
+date: "October 26, 2016"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+## <span style="color:blue"><b>Week9 Assignment (Web APIs)</b></span>
+##### <span style="color:red"><b> (1) Your task is to choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and transform it to an R dataframe.</b></span>
+
+```{r}
+library(dplyr)
+library(jsonlite)
+```
+
+##### <span style="color:red"><b> (2) Get all the books available. Read the JSON data into R data frame.</b></span>
+```{r}
+url1 = "http://api.nytimes.com/svc/books/v3/lists/names.json?"
+key1 = "api-key=c991ccaa513642319cd329b0edde7749"
+fullUrl1 = paste0(url1, key1)
+booksInfo_data = fromJSON(fullUrl1)
+booksInfo_df = data.frame(booksInfo_data$results)
+colnames(booksInfo_df) = c("List Name", "Display Name", "Encoded List Name", "Published Date (Oldest)", "Published Date (Newest)", "Updated")
+class(booksInfo_df)
+head(booksInfo_df, 10)
+nrow(booksInfo_df)
+
+```
+
+
+
+##### <span style="color:red"><b> (3) Get all Health related books. Read the JSON data into R data frame.</b></span>
+```{r}
+url2 = "http://api.nytimes.com/svc/books/v3/lists/health.json?"
+key2 = "api-key=c991ccaa513642319cd329b0edde7749"
+fullUrl2 = paste0(url2, key2)
+books_data = fromJSON(fullUrl2)
+books_df = data.frame(books_data$results$books)
+class(books_df)
+head(books_df, 2)
+
+books_df = select(books_df, matches("primary_isbn13|publisher|title|author"))
+colnames(books_df) = c("ISBN-13", "Publisher", "Title", "Author")
+books_df = books_df[c("Title", "Author", "Publisher", "ISBN-13")]
+print(books_df)
+```
