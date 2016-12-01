@@ -1,7 +1,7 @@
 ---
 title: "Project4"
 author: "A.S"
-date: "November 21, 2016"
+date: "November 17, 2016"
 output: html_document
 ---
 
@@ -12,16 +12,16 @@ knitr::opts_chunk$set(echo = TRUE)
 options(width = 3000)
 ```
 
-```{r}
-library(RMySQL)
-library(mongolite)
-```
-
 ## <span style="color:blue"><b>NoSQL Migration</b></span>
 
 ##### <span style="color:red"><b>The objective of this project is to migrate data from Relational Database (MySQL) to NoSQL Database (MongoDB):</b></span>
 
 ##### <span style="color:red"><b>The datasets for this project is downloaded from http://openflights.org/data.html. The data consists of flights information for all airlines in the world. For the purpose of this project, I've selected all flights (airlines, airports, and routes) that have source and destination in the United States.</b></span>
+
+```{r}
+library(RMySQL)
+library(mongolite)
+```
 
 ##### <span style="color:red"><b> (1) Download datasets from http://openflights.org. Clean and prepare it to be imported to MySQL database tables airlines, airports and routes. The structure of the database tables is shown here.</b></span>
 
