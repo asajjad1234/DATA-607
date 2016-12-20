@@ -1,0 +1,292 @@
+---
+title: "Final_Project"
+author: "Ahmed Sajjad & Ali Harb"
+date: "December 17, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+## <span style="color:blue"><b>Lung Cancer and Air Pollution</b></span>
+
+##### <span style="color:red"><b>(1) Introduction: </b></span>
+<span><b>Lung cancer is caused by many factors. One of the factors is air pollutants. There are many types of air pollutants. The six air pollutants are carbon monoxide, lead, ground-level ozone, nitrogen dioxide, sulfur dioxide and particulate matter. Particulate matter (PM), also known as particle pollution, is a complex mixture of extremely small particles and liquid droplets that get into the air. Once inhaled, these particles can affect the heart and lungs and cause serious health effects. Particulate Matter is measued with an index called PM2.5. PM2.5 particles are extremely small air pollutants with a diameter of 2.5 micrometers or less. They are small enough to invade even the smallest airways.
+
+In this project we will be using PM2.5 (air pollution index) and compare it with the count of lung cancer incidents for 7 different cities:
+
++ Atlanta
++ Detroit
++ Los Angels
++ San Francisco
++ San Jose
++ Seattle
++ Pittsburgh
+
+The objective of this project is to analyze the cause and effect relationship of the Independent Variable (PM2.5) on the Dependent Variable (Lung Cancer count). The Linear Least Squares Regression method is used to create a model that predicts the value of the dependent variable. Our assumption is that PM2.5 has an effect on lung cancer rate.
+</b></span>
+
+##### <span style="color:red"><b>(2) Data Sources: </b></span>
+<span><b>The datasets for this project are downloaded from the following sites for years 1999 to 2013:
+
++ [Lung Cancer Incidence (CDC)](https://nccd.cdc.gov/USCS/cancersbystateandregion.aspx?Year=2013&Variable1=California)
++ [Air Pollution (EPA) (Atlanta, Detroit, Los Angeles, San Francisco, San Jose, Seattle)](https://www.epa.gov/outdoor-air-quality-data/download-daily-data)
++ [Air Pollution (Pennsylvania Gov Health and Statistics) (Pittsburgh) ](http://www.statistics.health.pa.gov/HealthStatistics/CancerStatistics/CancerTables/Pages/Cancer-Tables.aspx#.WFimiFMrJt8)
+
+</b></span>
+
+##### <span style="color:red"><b>(3) Libraries: </b></span>
+##### <span style="color:blue"><b>(3.1) The following <u>dplyr/tidyr</u> functions are used in this project</b></span>
+<table border="1" width="200">
+<tr><th><b>dplyr</b></th><th><b>tidyr</b></th></tr>
+<tr><td><b>&nbsp;mutate</b></td><td><b>&nbsp;gather</b></td></tr>
+<tr><td><b>&nbsp;filter</b></td><td><b></b></td></tr>
+<tr><td><b>&nbsp;arrange</b></td><td><b></b></td></tr>
+<tr><td><b>&nbsp;select</b></td><td><b></b></td></tr>
+</table>
+<br>
+
+```{r message=FALSE , warning=FALSE, }
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+##### <span style="color:red"><b> (4) Load, Transform and Clean Data: </b></span>
+##### <span style="color:blue"><b> (4.1) Lung Cancer Incidence and Air Pollution Data for each city is loaded for each year from 1999 to 2013. </b></span>
+
+```{r message=FALSE}
+setwd(getwd())
+cancer_incidence_df = read.csv(file="DATA\\INCIDENCE_DATA\\INCIDENCE_DATA_CITIES.csv", 
+                               head=TRUE, sep=",",stringsAsFactors = FALSE)
+colnames(cancer_incidence_df) = gsub("\\.Count","",colnames(cancer_incidence_df))
+print(cancer_incidence_df)
+
+cancer_incidence_df2 = gather(cancer_incidence_df, Year, Count, X1999:X2013)
+cancer_incidence_df2$Year = gsub("X","", cancer_incidence_df2$Year)
+cancer_incidence_df2$Count = gsub(",", "", cancer_incidence_df2$Count)
+cancer_incidence_df2$Count = as.numeric(cancer_incidence_df2$Count)
+colnames(cancer_incidence_df2) = c("City", "Year", "Count")
+cancer_incidence_df2$City = gsub("San Francisco-Oakland", "San Francisco", cancer_incidence_df2$City)  
+cancer_incidence_df2$City = gsub("San Jose-Monterey", "San Jose", cancer_incidence_df2$City)  
+cancer_incidence_df2$City = gsub("Seattle-Puget Sound", "Seattle", cancer_incidence_df2$City)
+cancer_incidence_df2 = arrange(cancer_incidence_df2, City)
+head(cancer_incidence_df2)
+
+# function to extract year from date
+getYear = function(date) {
+  return (as.numeric(gsub(".*/","",date)))
+}
+
+# function to load air pollution data for each city
+getPollutionData = function(directoryName) {
+  filenames <- list.files(directoryName, pattern="*.csv", full.names=TRUE)
+  dim(filenames)
+  ldf = lapply(filenames, read.csv)
+
+  count = 0
+  total = NULL
+  for (i in 1:length(filenames)) {
+    temp_df = ldf[[i]]
+    count = count + nrow(temp_df)
+    total = rbind(total, temp_df)
+  }
+  colnames(total) = gsub("\\.","_",colnames(total))
+  cityPollution_df = select(total,  matches("Date|Daily_Mean_PM2_5_Concentration|DAILY_AQI_VALUE|CBSA_NAME"))
+  colnames(cityPollution_df) = c("Date", "PM25", "DAILY_AQI", "City")
+  cityPollution_df = arrange(cityPollution_df, Date)
+  cityPollution_df = mutate(cityPollution_df, Year=getYear(cityPollution_df$Date))
+  return(cityPollution_df)
+}
+
+atlanta_df = getPollutionData("DATA\\POLLUTION_DATA\\01_ATLANTA")
+nrow(atlanta_df)
+head(atlanta_df)
+
+detroit_df = getPollutionData("DATA\\POLLUTION_DATA\\02_DETROIT")
+nrow(detroit_df)
+head(detroit_df)
+
+los_angeles_df = getPollutionData("DATA\\POLLUTION_DATA\\03_LOS_ANGELES")
+nrow(los_angeles_df)
+head(los_angeles_df)
+
+san_francisco_df = getPollutionData("DATA\\POLLUTION_DATA\\04_SAN_FRANCISCO")
+nrow(san_francisco_df)
+head(san_francisco_df)
+
+san_jose_df = getPollutionData("DATA\\POLLUTION_DATA\\05_SAN_JOSE")
+nrow(san_jose_df)
+head(san_jose_df)
+
+seattle_df = getPollutionData("DATA\\POLLUTION_DATA\\06_SEATTLE")
+nrow(seattle_df)
+head(seattle_df)
+
+pittsburgh_df = getPollutionData("DATA\\POLLUTION_DATA\\07_PITTSBURGH")
+nrow(pittsburgh_df)
+head(pittsburgh_df)
+```
+##### <span style="color:red"><b> (5) Data Preparation: </b></span>
+##### <span style="color:blue"><b> (5.1) The air pollution data is collected for each day of the year. So, we take the average value for each year from 1999 to 2013 for each city. Since the lung cancer incidence data is available for each year, it will be easier for our analysis if the pollution data is also converted to yearly PM2.5 value.
+ </b></span>
+```{r message=FALSE}
+
+# function to calculate average value for air pollution
+getYearlyMean = function(CityPollutionData,mycity) {
+  averagePollutionYears = NULL
+  
+  for (i in 1999:2013) {
+    myData = filter (CityPollutionData, Year==i)
+    averagePollutionYears = rbind(averagePollutionYears,c(i,round(mean(myData$PM25),2)))
+  }
+  
+  averagePollutionYears = as.data.frame(averagePollutionYears)
+  averagePollutionYears$city = mycity
+  colnames(averagePollutionYears) = c("Year","Mean","City")
+  return(averagePollutionYears)
+}
+
+atlanta_Pollution_df = getYearlyMean(atlanta_df,"Atlanta")
+detroit_Pollution_df = getYearlyMean(detroit_df,"Detroit")
+los_angeles_Pollution_df = getYearlyMean(los_angeles_df,"Los Angeles")
+san_francisco_Pollution_df = getYearlyMean(san_francisco_df,"San Francisco")
+san_jose_Pollution_df = getYearlyMean(san_jose_df,"San Jose")
+seattle_Pollution_df = getYearlyMean(seattle_df,"Seattle")
+pittsburgh_Pollution_df = getYearlyMean(pittsburgh_df,"Pittsburgh")
+
+atlanta_Pollution_df;
+detroit_Pollution_df;
+los_angeles_Pollution_df;
+san_francisco_Pollution_df;
+san_jose_Pollution_df;
+seattle_Pollution_df;
+pittsburgh_Pollution_df;
+
+pollutionMaster_df = NULL
+pollutionMaster_df = rbind(pollutionMaster_df, atlanta_Pollution_df)
+pollutionMaster_df = rbind(pollutionMaster_df, detroit_Pollution_df)
+pollutionMaster_df = rbind(pollutionMaster_df, los_angeles_Pollution_df)
+pollutionMaster_df = rbind(pollutionMaster_df, san_francisco_Pollution_df)
+pollutionMaster_df = rbind(pollutionMaster_df, san_jose_Pollution_df)
+pollutionMaster_df = rbind(pollutionMaster_df, seattle_Pollution_df)
+pollutionMaster_df = rbind(pollutionMaster_df, pittsburgh_Pollution_df)
+
+pollutionMaster_df = arrange(pollutionMaster_df, City)
+head(pollutionMaster_df, 10)
+tail(pollutionMaster_df, 10)
+
+cancer_airpollution_merged_df = merge (x = pollutionMaster_df, y = cancer_incidence_df2, c("City","Year"))
+```
+##### <span style="color:red"><b> (6) Data Visualization: </b></span>
+##### <span style="color:blue"><b> (6.1) Display the contents of cancer incidence data.</b></span>
+
+<span><b>
+From the lung cancer incidence graphs we notice the following:
+
++ Highest number of cases are reported in Los Angeles
+
++ Lowest number of cases are reported in San Jose
+
++ Lung Cancer cases in Seattle and Atlanta seem to be positively increasing
+
++ Lung Cancer Cases in San Francisco, San Jose, Pittsburgh and Detroit are stable
+
++ Lung cancer cases in Los Angeles are decreasing. 
+
+</b></span>
+
+```{r message=FALSE}
+#Bar Graph
+ggplot(data=cancer_incidence_df2, aes(x=Year, y=Count, fill=City)) + 
+  geom_bar(stat="identity", position="dodge",width=0.5) + 
+  ylab("Count of Lung Cancer") + ggtitle("Count of Lung Cancer")
+
+#Line Graph
+ggplot(data=cancer_incidence_df2, aes(x=Year, y=Count, group=City, color=City)) +  
+  geom_line() + geom_point() + 
+  ylab("# of Lung Cancer cases") +  ggtitle("Lung Cancer Statistics")
+
+```
+
+##### <span style="color:blue"><b> (6.2) From the distribution charts, we notice that some cities like Detroit, Los Angeles and Pittsburgh have higher conceration of air pollution distribution.</b></span>
+```{r message=FALSE}
+
+myHistogramPlots = function(city_df, cityName, lowColor, highColor) {
+  plot = ggplot(city_df, aes(x=PM25)) +
+  geom_histogram (aes(fill = ..count..)) +
+  ggtitle(cityName) + scale_fill_gradient("Count", low = lowColor, high = highColor)
+  return(plot)
+}
+
+atlanta_histogram = myHistogramPlots(atlanta_df, "Atlanta", "green", "red")
+detroit_histogram = myHistogramPlots(detroit_df, "Detroit", "orange", "blue")
+los_angeles_histogram = myHistogramPlots(los_angeles_df, "Los Angeles", "yellow", "purple")
+san_francisco_histogram = myHistogramPlots(san_francisco_df, "San Francisco", "cyan", "navy")
+san_jose_histogram = myHistogramPlots(san_jose_df, "San Jose", "yellow", "maroon")
+seattle_histogram = myHistogramPlots(seattle_df, "Seattle", "blue", "orange")
+pittsburgh_histogram = myHistogramPlots(pittsburgh_df, "Pittsburgh", "limegreen", "deeppink")
+
+atlanta_histogram
+detroit_histogram
+los_angeles_histogram
+san_francisco_histogram
+san_jose_histogram
+seattle_histogram
+pittsburgh_histogram
+
+```
+
+
+##### <span style="color:red"><b> (7) Statistical Analysis: </b></span>
+##### <span style="color:blue"><b> (7.1) Perform correlation analysis between lung cancer incidence and air pollution index PM2.5.</b></span>
+```{r}
+# find the summary statistics
+findStatsFunction<-function(cityName) {
+  byCity = filter(cancer_airpollution_merged_df, City == cityName)
+  corr = cor(byCity$Mean,byCity$Count)
+  print (paste0("cor=",round(corr,2)))
+  myTitle = paste0(cityName, " - PM2.5 vs Lung Cancer", sep="")
+  plot = ggplot(byCity, aes(Mean,Count)) + geom_point(colour="red") + 
+    xlab("PM2.5") + ylab("Lung Cancer") + labs(title = myTitle)
+  print(plot)
+  m = lm (Count~Mean,byCity)
+  s = summary(m)
+  print(s)
+  return (byCity)
+}
+
+atlanta_statistics = findStatsFunction("Atlanta")
+detroit_statistics = findStatsFunction("Detroit")
+los_angeles_statistics = findStatsFunction("Los Angeles")
+san_francisco_statistics = findStatsFunction("San Francisco")
+san_jose_statistics = findStatsFunction("San Jose")
+seattle_statistics = findStatsFunction("Seattle")
+pittsburgh_statistics = findStatsFunction("Pittsburgh")
+```
+##### <span style="color:blue"><b> (7.2) The following table describes statistical analysis results.</b></span>
+
+<table border="1" width="900" align="center" font="">
+<tr><th>City</th><th>Linear Regression Equation</th><th>Correlation Coefficient</th><th>R-Square</th><th>Description</th></td>
+<tr><td>Atlanta</td><td>y=17.50 +(-21.97) x</td><td>-0.83</td><td>0.69</td><td>Strong correlation. Model fits the data</td></tr>
+<tr><td>Detroit</td><td>y=3290.02 +(-1.34) x</td><td>-0.04</td><td>0.00</td><td>Very Week correlation. Model fits doesn't fit the data. It seems to have non-linear fit</td></tr>
+<tr><td>Los Angeles</td><td>y=3114.14 + 47.45 x</td><td>0.82</td><td>0.67</td><td>String correlation. Model fits the data</td></tr>
+<tr><td>San Francisco</td><td>y=2125.85 + (11.91) x</td><td>0.34</td><td>0.11</td><td>Week correlation. Model doesn't fit the data.Model seems non linear</td></tr>
+<tr><td>San Jose</td><td>y=979.44 + (0.39) x</td><td>0.02</td><td>0.00</td><td>Week correlation. Model doesn't fit the data</td></tr>
+<tr><td>Seattle</td><td>y = 3386.68 + (-68.91) x</td><td>-0.95</td><td>0.90</td><td>Strong correlation. Model fits the data</td></tr>
+<tr><td>Pittsburg</td><td>y = 1097.76 + (7.94) x</td><td>0.17</td><td>0.03</td><td>Week correlation. Model doesn't fit the data. It has an outlier</td></tr>
+</table>
+<br>
+
+##### <span style="color:red"><b> (8) Conclusion:</b></span>
+<span><b>Based on the anaysis, we notice that air pollution and lung cancer incidence data for some of the cities fit the linear regression model. And the data for other cities such as San Francisco, San Jose and Detroit have week correlation and low R-square value which indicate that the linear model is not be a good model for predicting lung cancer based on ambient air pollution (PM2.5).</b></span>
+
+<span><b>So, we conclude that there might be other factors like tobacco smoking and occupational pollution exposure that contribute to lung cancer incidences. The excess lung cancer risk associated with ambient air pollution is small compared with that from tobacco smoking. It is also possible to predict the incidence of lung cancer using solutions based on transformation methods. 
+</b></span>
+<br>
+
+
