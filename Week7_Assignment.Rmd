@@ -1,0 +1,67 @@
+---
+title: "Week7 Assignment"
+author: "A.S"
+date: "October 14, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+## Week7 Assignment
+##### <span style="color:red"><b> (1) Write R code, using your packages of choice, to load the information from each of the three sources (HTML, XML and JSON) into separate R data frames. Are the three data frames identical?</b></span>
+
+
+```{r}
+library(XML)
+library(RCurl)
+library(jsonlite)
+```
+
+##### <span style="color:red"><b> (2) Read the information from HTML, XML and JSON files into R.</b></span>
+```{r}
+
+```
+##### <span style="color:blue"><b> (2.a) Load HTML file into a data frame</b></span>
+```{r}
+htmlFileURL = getURL("https://raw.githubusercontent.com/asajjad1234/DATA-607/master/books.html")
+htmlFile_df = data.frame(readHTMLTable(htmlFileURL, header=TRUE))
+class(htmlFile_df)
+print (htmlFile_df)
+```
+##### <span style="color:blue"><b> (2.b) Link to HTML file</b></span>
+ <a href="https://raw.githubusercontent.com/asajjad1234/DATA-607/master/books.html"><b>HTML File</b></a>
+
+##### <span style="color:blue"><b> (2.c) Load XML file into a data frame</b></span>
+```{r}
+xmlFileURL = getURL("https://raw.githubusercontent.com/asajjad1234/DATA-607/master/books.xml")
+xmlFile = xmlParse(xmlFileURL)
+xmlFile_df = data.frame(xmlToList(xmlFile))
+class(xmlFile_df)
+print(xmlFile_df)
+
+
+```
+
+##### <span style="color:blue"><b> (2.d) Link to XML file</b></span>
+ <a href="https://raw.githubusercontent.com/asajjad1234/DATA-607/master/books.xml"><b>XML File</b></a>
+
+##### <span style="color:blue"><b> (2.e) Load JSON file into a data frame</b></span>
+```{r}
+jsonFileURL = getURL("https://raw.githubusercontent.com/asajjad1234/DATA-607/master/books.json")
+jsonData_df = data.frame(fromJSON(jsonFileURL, flatten = FALSE))
+class(jsonData_df)
+print(jsonData_df)
+```
+
+##### <span style="color:blue"><b> (2.f) Link to JSON file</b></span>
+ <a href="https://raw.githubusercontent.com/asajjad1234/DATA-607/master/books.json"><b>JSON File</b></a>
+
+##### <span style="color:red"><b> (3) Conclusion.</b></span>
+<span style="color:blue"><b>The files contain the same contents about books in three different formats (HTML, XML and JSON). But when they are loaded as R data frames, they look different.</b></span>
+
+

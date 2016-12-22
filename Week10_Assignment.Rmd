@@ -1,0 +1,169 @@
+---
+title: "Week10 Assignment"
+author: "A.S"
+date: "November 4, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 3000)
+```
+
+
+## <span style="color:blue"><b>Document Classification (Text Mining)</b></span>
+
+##### <span style="color:red"><b>The task of this assignment is to classify documents using already classified training documents. For this purpose documents from this site https://spamassassin.apache.org/publiccorpus/ are used.</b></span>
+
+##### <span style="color:red"><b>The objective of this homework assignment is to classify documents</b></span>
+
+##### <span style="color:red"><b> (1) Load Libraries :</b></span>
+
+```{r}
+library(tm)
+library(stringr)
+library(RTextTools)
+library(SnowballC)
+library(caret)
+library(wordcloud)
+
+```
+
+##### <span style="color:red"><b> (2) Download documents and Load them into Corpus :</b></span>
+```{r}
+
+
+# Set Options
+options(stringsAsFactors = FALSE)
+```
+
+
+##### <span style="color:blue"><b>(2.a) Create Corpus function : </b></span>
+```{r}
+# create corpus
+createCorpus = function(directoryName) {
+  directory = paste0(getwd(), "/", directoryName)
+  corpus = Corpus(DirSource(directory=directory, pattern="\\d+"))
+  print(length(corpus))
+  return(corpus)
+}
+```
+
+##### <span style="color:blue"><b>(2.b) Clean Corpus function : </b></span>
+```{r}
+# clean corpus
+cleanCorpus = function(corpus) {
+  tempCorpus = corpus
+  tempCorpus = tm_map(tempCorpus, removeNumbers)
+  tempCorpus = tm_map(tempCorpus, str_replace_all, pattern="[[.]]", replacement=" ")
+  tempCorpus = tm_map(tempCorpus, removeWords, words=stopwords("en"))
+  tempCorpus = tm_map(tempCorpus, tolower)
+  tempCorpus = tm_map(tempCorpus, stemDocument)
+  tempCorpus = tm_map(tempCorpus, PlainTextDocument)
+  print(length(tempCorpus))
+  return(tempCorpus)
+}
+```
+
+##### <span style="color:blue"><b>(2.c) Generate DocumentTermMatrix function : </b></span>
+```{r}
+# build Document Term Matrix
+generateDTM = function(corpus) {
+  dtm = DocumentTermMatrix(corpus)
+  dtm = removeSparseTerms(dtm, 0.9)
+  inspect(dtm[1:10, 1:2])
+  return (dtm)
+}
+```
+
+##### <span style="color:blue"><b>(2.d) Create Corpus : </b></span>
+```{r}
+hamCorpus = createCorpus("easy_ham")
+spamCorpus = createCorpus("spam")
+
+meta(hamCorpus,  tag="type") = "ham"
+meta(spamCorpus, tag="type") = "spam"
+
+totalCorpus = c(spamCorpus, hamCorpus)
+totalCorpus = cleanCorpus(totalCorpus)
+
+metaList = factor(unlist(meta(totalCorpus, "type")))
+table(metaList)
+```
+
+##### <span style="color:blue"><b>(2.e) Generate DocumentTermMatrix : </b></span>
+```{r}
+dtm = generateDTM(totalCorpus)
+print(hamCorpus)
+print(spamCorpus)
+
+metaListLength = length(metaList)
+trainPartition = round(.75 * metaListLength)
+```
+
+##### <span style="color:red"><b> (3) Train model using SVM and Classify :</b></span>
+##### <span style="color:blue"><b>(3.a) Make container and Train Model : </b></span>
+```{r}
+container = create_container(dtm, 
+                             labels=as.numeric(metaList), 
+                             trainSize=1:trainPartition, 
+                             testSize=trainPartition:metaListLength, 
+                             virgin=FALSE)
+
+svmModel   = train_model(container, "SVM")
+svmOut     = classify_model(container, svmModel)
+svmSummary = create_analytics(container, svmOut)
+```
+
+##### <span style="color:blue"><b>(3.b) Take 100% spam and test it : </b></span>
+```{r}
+testCorpus = createCorpus("spam_2")
+testCorpus = cleanCorpus(testCorpus)
+testTdm = DocumentTermMatrix(testCorpus, list(dictionary=findFreqTerms(dtm)) )
+```
+
+##### <span style="color:red"><b> (4) Analyze Results</b></span>
+##### <span style="color:blue"><b>(4.a) Word Cloud (TotalCorpus) : </b></span>
+```{r}
+wordcloud(totalCorpus, max.words = 100)
+```
+
+##### <span style="color:blue"><b>(4.b) Word Cloud (SpamCorpus) : </b></span>
+```{r}
+wordcloud(spamCorpus, max.words = 100)
+```
+
+##### <span style="color:blue"><b>(4.c) Word Cloud (hamCorpus) : </b></span>
+```{r}
+wordcloud(hamCorpus,  max.words = 100)
+```
+
+##### <span style="color:blue"><b>(4.d) Word Cloud (testCorpus) : </b></span>
+```{r}
+wordcloud(testCorpus, max.words = 100)
+```
+
+##### <span style="color:blue"><b>(4.e) Frequency Plot (totalCorpus) : </b></span>
+```{r}
+wordMatrix1 = as.data.frame( t(as.matrix(  dtm )) )
+term_frequency1 = rowSums(wordMatrix1)
+term_frequency1 = sort(term_frequency1, decreasing = TRUE)
+barplot(term_frequency1[1:10], col="blue", las = 2)
+```
+
+##### <span style="color:blue"><b>(4.f) Frequency Plot (testCorpus) : </b></span>
+```{r}
+wordMatrix2 = as.data.frame( t(as.matrix(  testTdm )) )
+term_frequency2 = rowSums(wordMatrix2)
+term_frequency2 = sort(term_frequency2, decreasing = TRUE)
+barplot(term_frequency2[1:10], col="blue", las = 2)
+```
+
+##### <span style="color:red"><b> (5) Conclusion :</b></span>
+##### <span style="color:blue"><b>(5.a) In this project spam and ham data is used to create and classify the model using Support Vector Machines (SVM) and tested with another spam data. Text/Data Mining is an interesting field and useful information could be extracted using text/data mining techniques.
+<br/>
+<br/>
+</b></span></b></span>
+

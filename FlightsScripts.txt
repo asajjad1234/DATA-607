@@ -1,0 +1,96 @@
+-- To use root password and connect
+C:\DEV_TOOLS\mysql-5.6.23-winx64\bin>mysql -h localhost -u root -p
+Enter password:
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 4
+Server version: 5.6.23 MySQL Community Server (GPL)
+
+mysql> use flights
+Database changed
+mysql>
+
+/* Delete flights database */
+DROP DATABASE flights;
+
+
+/* Create flights database */
+CREATE DATABASE flights;
+
+
+/* Use flights database */
+USE flights;
+
+/* Drop all flights database tables */
+DROP TABLE flights.airlines;
+DROP TABLE flights.airports;
+DROP TABLE flights.routes;
+
+
+/* Create flights.airlines table */
+CREATE TABLE airlines
+(
+	AIRLINE_ID             INT(5) NOT NULL,
+	NAME                   VARCHAR(100),
+	IATA_CODE              VARCHAR(5),
+	ICAO_CODE              VARCHAR(5),
+	CALL_SIGN              VARCHAR(50),
+	COUNTRY                VARCHAR(50),
+	ACTIVE                 CHAR(1),
+	PRIMARY KEY (AIRLINE_ID)
+);
+
+/* Create flights.airports table */
+CREATE TABLE airports
+(
+	AIRPORT_ID	         INT(5) NOT NULL, 
+	NAME		         VARCHAR(100),
+	CITY		VARCHAR(50), 
+	COUNTRY		VARCHAR(50),
+	IATA_FAA	VARCHAR(3),
+	ICAO		VARCHAR(5), 
+	LATITUDE	DECIMAL(9,6), 
+	LONGITUDE       DECIMAL(9,6), 
+	ALTITUDE        NUMERIC(6),
+	TIMEZONE	NUMERIC(3), 
+	DST		CHAR(1), 
+	TIMEZONE_DATABASE VARCHAR(50),
+	PRIMARY KEY (AIRPORT_ID)
+);
+
+/* Create flights.routes table */
+CREATE TABLE routes
+(
+	AIRLINE_CODE		CHAR(5) NOT NULL,
+	AIRLINE_ID 		INT(5) NOT NULL,
+	SOURCE_AIRPORT_CODE	VARCHAR(4),
+	SOURCE_AIRPORT_ID	INT(5),
+	DEST_AIRPORT_CODE	VARCHAR(4),
+	DEST_AIRPORT_ID		INT(5),
+	CODESHARE		CHAR(1),
+	STOPS			NUMERIC(2),
+	EQUIPMENT		VARCHAR(50),
+	PRIMARY KEY (AIRLINE_CODE, SOURCE_AIRPORT_CODE, DEST_AIRPORT_CODE)
+);
+
+load data local infile 'C:\\D-Drive\\Week12_Project4\\airlines.csv' into table flights.airlines
+ fields terminated by ','
+ enclosed by '"'
+ lines terminated by '\n'
+ (AIRLINE_ID, NAME, IATA_CODE, ICAO_CODE, CALL_SIGN, COUNTRY, ACTIVE);
+
+
+load data local infile 'C:\\D-Drive\\Week12_Project4\\airports.csv' into table flights.airports
+ fields terminated by ','
+ enclosed by '"'
+ lines terminated by '\n'
+ (AIRPORT_ID, NAME, CITY, COUNTRY, IATA_FAA, ICAO, LATITUDE, LONGITUDE, ALTITUDE, TIMEZONE, DST, TIMEZONE_DATABASE);
+
+
+load data local infile 'C:\\D-Drive\\Week12_Project4\\routes.csv' into table flights.routes
+ fields terminated by ','
+ enclosed by '"'
+ lines terminated by '\n'
+(AIRLINE_CODE, AIRLINE_ID , SOURCE_AIRPORT_CODE, SOURCE_AIRPORT_ID, DEST_AIRPORT_CODE, DEST_AIRPORT_ID, CODESHARE, STOPS, EQUIPMENT);
+
+
+
